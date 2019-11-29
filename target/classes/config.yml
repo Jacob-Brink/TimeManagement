@@ -1,0 +1,9 @@
+#database
+host: "na-sql.pebblehost.com"
+port: 3306
+database: "customer_82175"
+username: "customer_82175"
+password: "17aad5a450"
+
+#number of minutes between each mysql save
+frequency: 15

@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="VertXTimeManagement:jar">
+    <output-path>$USER_HOME$/minecraft/spigot/server/plugins</output-path>
+    <root id="archive" name="VertXTimeManagement.jar">
+      <element id="module-output" name="VertXTimeManagement" />
+    </root>
+  </artifact>
+</component>

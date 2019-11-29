@@ -1,0 +1,18 @@
+name: TimeManagement
+main: Main.TimeManagement
+version: 1.0
+api-version: 1.13
+depend: []
+commands:
+  totaltime:
+    description: get the total time played
+    permission: time.total
+    permissions: []
+    permission-message: You need time.total to use this.
+    usage: "Usage: /totaltime"
+  firstlogin:
+    description: get the the first time you logged in
+    permission: time.birth
+    permissions: []
+    permission-message: You need time.birth to use this.
+    usage: "Usage: /firstlogin"
