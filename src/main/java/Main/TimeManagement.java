@@ -98,12 +98,13 @@ public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI
         }
 
     }
-/*
+
     @Override
     public void onDisable() {
         Storage.saveState(true);
+        MySQLConnectionPool.close();
     }
-
+/*
     @Override
     public BigInteger getTotalPlayTimeMinutes(UUID uuid) {
         return Calculations.getTotalPlayTimeMinutes(uuid);

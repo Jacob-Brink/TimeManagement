@@ -86,10 +86,18 @@ public class MySQLTable {
      */
     private boolean isSetCorrectly() {
         List<ColumnWrapper> list = new ArrayList<ColumnWrapper>(columns.values());
+        Connection connection = null;
+        try {
+            connection = MySQLConnectionPool.getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+
         for (ColumnWrapper column : list) {
             Bukkit.getLogger().info(" - " + column.getName());
             try {
-                DatabaseMetaData md = MySQLConnectionPool.getConnection().getMetaData();
+                DatabaseMetaData md = connection.getMetaData();
                 ResultSet rs = md.getColumns(null, null, getName(), column.getName());
                 if (rs.next())
                     continue;
@@ -257,7 +265,9 @@ public class MySQLTable {
                     if (processingOn == false) {
                         if (!((column.getCurrentValue(results)).equalsIgnoreCase(valuePair.getLastValue()))) {
                             processingOn = true;
-                            valuePair.getCallback().call(results);
+                            if (valuePair.getCallback() != null) {
+                                valuePair.getCallback().call(results);
+                            }
                         }
                     } else {
                         valuePair.getCallback().call(results);
@@ -281,7 +291,6 @@ public class MySQLTable {
     }
 
     public static void processData(Aggregator aggregator, String sql) {
-
         ResultSet results;
         try {
             PreparedStatement statement = MySQLConnectionPool.getConnection().prepareStatement(sql);

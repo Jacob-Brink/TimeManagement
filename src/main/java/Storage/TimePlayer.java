@@ -2,81 +2,90 @@ package Storage;
 
 import Main.TimeManagement;
 
-import java.util.ArrayList;
 import java.util.TreeSet;
 import java.util.UUID;
 
 public class TimePlayer {
     private UUID uuid;
-    private LoginListDataWrapper loginListDataWrapper;
     private long lastAFKChangeTime;
     private long firstLoginDate, totalTimeAFK, totalTime, loginCount;
     private boolean isAFK;
+    private boolean changed;
+    private boolean loggedIn;
 
-    public class LoginListDataWrapper {
-        private TreeSet<LoginData> newLogins;
-        private final TreeSet<LoginData> logins;
-        private long currentLogInStart;
-        private boolean online;
+    private TreeSet<LoginData> newLogins;
+    private TreeSet<LoginData> logins;
+    private long currentLogInStart;
+    private boolean online;
 
-        public LoginListDataWrapper (final TreeSet<LoginData> loadedLoginData) {
-            this.logins = new TreeSet<LoginData>(loadedLoginData);
-            this.newLogins = new TreeSet<LoginData>();
-            this.online = false;
-        }
+    public TreeSet<LoginData> getNewLoginData() {
+        return this.newLogins;
+    }
 
-        protected void loggedIn() {
-            currentLogInStart = getCurrentTime();
-            this.online = true;
-        }
+    public LoginData getCurrentLoginData() {
+        return new LoginData(currentLogInStart, (getCurrentTime() - currentLogInStart));
+    }
 
-        protected void loggedOut() {
-            this.newLogins.add(new LoginData(currentLogInStart, getCurrentTime() - currentLogInStart));
-            this.online = false;
-        }
+    public TreeSet<LoginData> getAllLoginData() {
+        TreeSet<LoginData> storedLoginDataCopy = new TreeSet<LoginData>(this.logins);
+        storedLoginDataCopy.addAll(this.newLogins);
+        return storedLoginDataCopy;
+    }
 
-        public TreeSet<LoginData> getNewLoginData() {
-            return this.newLogins;
-        }
+    public boolean isOnline() {
+        return this.online;
+    }
 
-        public LoginData getCurrentLoginData() {
-            return new LoginData(currentLogInStart, (getCurrentTime() - currentLogInStart));
-        }
+    public void setNewToStored() {
+        this.newLogins = new TreeSet<LoginData>();
+    }
 
-        public TreeSet<LoginData> getAllLoginData() {
-            TreeSet<LoginData> storedLoginDataCopy = new TreeSet<LoginData>(this.logins);
-            storedLoginDataCopy.addAll(this.newLogins);
-            return storedLoginDataCopy;
-        }
+    public boolean changed() {
+        return this.changed;
+    }
 
-        public boolean isOnline() {
-            return this.online;
-        }
+    public long getTotalPlayTime() {
+        return this.totalTime;
+    }
 
-        public void setNewToStored() {
-            this.newLogins = new TreeSet<LoginData>();
-        }
+    public long getTotalAFKTime() {
+        return this.totalTimeAFK;
+    }
 
+    public long getFirstLoginTime() {
+        return this.firstLoginDate;
+    }
+
+    public long getLoginCount() {
+        return this.loginCount;
     }
 
     public TimePlayer(final UUID uuid) {
         this.uuid = uuid;
-        this.loginListDataWrapper = new LoginListDataWrapper(new TreeSet<LoginData>());
         this.firstLoginDate = getCurrentTime();
         this.totalTimeAFK = 0;
         this.totalTime = 0;
         this.loginCount = 0;
         this.isAFK = false;
+        this.changed = false;
+        this.logins = new TreeSet<LoginData>();
+        this.newLogins = new TreeSet<LoginData>();
+        this.online = false;
+        this.loggedIn = false;
     }
 
-    public TimePlayer(final UUID uuid, TreeSet<LoginData> loginData, long firstLoginDate, long totalTimeAFK, long totalTime, long loginCount) {
+    public TimePlayer(final UUID uuid, TreeSet<LoginData> loadedLoginData, long firstLoginDate, long totalTimeAFK, long totalTime, long loginCount) {
         this.uuid = uuid;
-        this.loginListDataWrapper = new LoginListDataWrapper(loginData);
         this.firstLoginDate = firstLoginDate;
         this.totalTimeAFK = totalTimeAFK;
         this.totalTime = totalTime;
         this.loginCount = loginCount;
         this.isAFK = false;
+        this.changed = false;
+        this.logins = new TreeSet<LoginData>(loadedLoginData);
+        this.newLogins = new TreeSet<LoginData>();
+        this.online = false;
+        this.loggedIn = false;
     }
 
     public UUID getUUID() {
@@ -87,23 +96,34 @@ public class TimePlayer {
         return System.currentTimeMillis();
     }
 
-    public LoginListDataWrapper getLoginListWrapper() {
-        return this.loginListDataWrapper;
-    }
-
     public void loggedIn() {
-        loginListDataWrapper.loggedIn();
+        currentLogInStart = getCurrentTime();
+        this.online = true;
         lastAFKChangeTime = getCurrentTime();
         loginCount++;
-        this.isAFK = true;
+        this.isAFK = false;
+        this.changed = true;
+        TimeManagement.sendInfo("LOGGED IN!");
     }
 
     public void loggedOut() {
-        loginListDataWrapper.loggedOut();
+        this.newLogins.add(new LoginData(currentLogInStart, getCurrentTime() - currentLogInStart));
+        this.online = false;
+        totalTime += (getCurrentTime() - currentLogInStart);
         //if logging out as afk, add last duration
         if (isAFK) {
             this.totalTimeAFK += lastAFKDuration();
         }
+        this.changed = true;
+        TimeManagement.sendInfo("LOGGED OUT!");
+    }
+
+    public void resetChangedStatus() {
+        this.changed = false;
+    }
+
+    public void resetLoggedInOnceStatus() {
+        this.loggedIn = false;
     }
 
     private long lastAFKDuration() {
@@ -121,5 +141,6 @@ public class TimePlayer {
             this.totalTimeAFK += lastAFKDuration();
         }
     }
+
 
 }

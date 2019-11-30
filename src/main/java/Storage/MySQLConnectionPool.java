@@ -49,13 +49,29 @@ public class MySQLConnectionPool {
         config.setPassword(password);
         config.setDriverClassName("com.mysql.jdbc.Driver");
 
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("autoReconnect", true);
+        config.addDataSourceProperty("cachePrepStmts", true);
+        config.addDataSourceProperty("prepStmtCacheSize", 250);
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", 2048);
+        config.addDataSourceProperty("useServerPrepStmts", true);
+        config.addDataSourceProperty("cacheResultSetMetadata", true);
+
+        //config.setMaximumPoolSize(20);
+        //config.setConnectionTimeout(30000);
+
+
         ds = new HikariDataSource(config);
     }
 
     public static Connection getConnection() throws SQLException {
         return ds.getConnection();
+    }
+
+    public static void close() {
+        try {
+            ds.close();
+        } catch (Exception e) {
+            TimeManagement.sendError("A SQLException was caught" + e);
+        }
     }
 }

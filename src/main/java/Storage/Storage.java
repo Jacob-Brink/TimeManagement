@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import Storage.TimePlayer;
+import Storage.LoginData;
 
 public class Storage {
 
@@ -27,28 +29,7 @@ public class Storage {
         }
     }
 
-    public static void saveState(boolean saveOnDisable) {
-
-        String sql = "INSERT INTO " + mainTable.getName() + "(" + uuidColumn.getName() + "," + loginTime.getName() + "," + millPlayed.getName() + ") VALUES";
-
-        ArrayList<String> strings = new ArrayList<String>();
-        for (TimePlayer timePlayer : uuidToTimePlayer.values()) {
-            for (LoginData login : timePlayer.getLoginListWrapper().getNewLoginData()) {
-                TimeManagement.sendInfo("Storing new logins");
-                strings.add("(\"" + timePlayer.getUUID().toString() + "\"," + login.getStart() + "," + login.getMill() + ")");
-            }
-
-            if (timePlayer.getLoginListWrapper().isOnline()) {
-                LoginData currentLoginData = timePlayer.getLoginListWrapper().getCurrentLoginData();
-                strings.add("(\"" + timePlayer.getUUID().toString() + "\"," + currentLoginData.getStart() + "," + currentLoginData.getMill() + ")");
-            }
-
-            timePlayer.getLoginListWrapper().setNewToStored();
-        }
-
-        if (strings.size() == 0)
-            return;
-
+    public static String fillInCommas(String sql, ArrayList<String> strings) {
         boolean commas = true;
         int size = strings.size();
         int count = 0;
@@ -59,38 +40,94 @@ public class Storage {
             sql += valueEntry + (commas ? "," : "");
             count++;
         }
+        return sql;
+    }
 
-        ResultSet results;
+    public static void saveState(boolean saveOnDisable) {
+
+        TimeManagement.sendInfo("SAVING");
+        //1. insert login data to login table
+        String sql = "INSERT INTO " + loginListTable.getName() + "(" + uuidColumn.getName() + "," + loginTime.getName() + "," + millPlayed.getName() + ") VALUES";
+
+        ArrayList<String> strings = new ArrayList<String>();
+        for (TimePlayer timePlayer : uuidToTimePlayer.values()) {
+            TimeManagement.sendInfo("Player does exist");
+            for (LoginData login : timePlayer.getNewLoginData()) {
+                strings.add("(\"" + timePlayer.getUUID().toString() + "\"," + login.getStart() + "," + login.getMill() + ")");
+            }
+
+            if (timePlayer.isOnline()) {
+                LoginData currentLoginData = timePlayer.getCurrentLoginData();
+                strings.add("(\"" + timePlayer.getUUID().toString() + "\"," + currentLoginData.getStart() + "," + currentLoginData.getMill() + ")");
+            }
+
+            timePlayer.setNewToStored();
+        }
+
+        if (strings.size() == 0)
+            return;
+
+        sql = fillInCommas(sql, strings);
 
         TimeManagement.sendInfo("SQL: \"" + sql + "\"");
 
-        final String finalSql = sql;
-        final int entriesSaved = strings.size();
-
         if (!saveOnDisable) {
-            Bukkit.getScheduler().runTaskAsynchronously(TimeManagement.getPlugin(), new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        TimeManagement.sendInfo("Running insertion asynchronously");
-                        PreparedStatement statement = getConnection().prepareStatement(finalSql);
-                        statement.execute();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                        TimeManagement.sendError("Failed to send data to server. " + entriesSaved + " entries were unrecorded.");
-                    }
-                }
-            });
+            runSQLInsertion(sql);
         } else {
             try {
-                TimeManagement.sendInfo("Running insertion asynchronously");
-                PreparedStatement statement = getConnection().prepareStatement(finalSql);
+                PreparedStatement statement = getConnection().prepareStatement(sql);
                 statement.execute();
             } catch (SQLException e) {
                 e.printStackTrace();
-                TimeManagement.sendError("Failed to send data to server. " + entriesSaved + " entries were unrecorded.");
+                TimeManagement.sendError("Failed to send data to server.");
             }
         }
+
+        //2. insert main data to main table
+        String mainSQL = "INSERT INTO " + mainTable.getName() + "(" + uuidColumn.getName() + ", " + totalPlayTimeColumn.getName() + "," + totalPlayTimeAFKColumn.getName() + ", " + firstLoginTimeColumn.getName() + ", " + loginCountColumn.getName() + ") VALUES";
+        ArrayList<String> stringValues = new ArrayList<>();
+        for (TimePlayer timePlayer : uuidToTimePlayer.values()) {
+            if (timePlayer.changed() || timePlayer.isOnline()) {
+                String uuid = timePlayer.getUUID().toString();
+                long totalPlayTime = timePlayer.getTotalPlayTime();
+                long totalPlayTimeAFK = timePlayer.getTotalAFKTime();
+                long firstLogInTime = timePlayer.getFirstLoginTime();
+                long totalLoginCount = timePlayer.getLoginCount();
+
+                stringValues.add("(\"" + uuid + "\", " + totalPlayTime + ", " + totalPlayTimeAFK + ", " + firstLogInTime + ", " + totalLoginCount + ")");
+            }
+        }
+
+        mainSQL = fillInCommas(mainSQL, stringValues);
+        TimeManagement.sendInfo("MAIN SQL INSERTION: " + mainSQL);
+        if (!saveOnDisable) {
+            runSQLInsertion(mainSQL);
+        } else {
+            try {
+                PreparedStatement statement = getConnection().prepareStatement(mainSQL);
+                statement.execute();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                TimeManagement.sendError("Failed to send data to server.");
+            }
+        }
+
+    }
+
+    public static void runSQLInsertion(final String sql) {
+        Bukkit.getScheduler().runTaskAsynchronously(TimeManagement.getPlugin(), new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    TimeManagement.sendInfo("Running insertion asynchronously " + sql);
+                    PreparedStatement statement = getConnection().prepareStatement(sql);
+                    statement.execute();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    TimeManagement.sendError("Failed to send data to server...");
+                }
+            }
+        });
     }
 
     public static TimePlayer getTimePlayer(UUID uuid) {
@@ -213,9 +250,11 @@ public class Storage {
     public static void loadState() {
         setupTables();
 
+        TimeManagement.sendInfo(loginListTable.getName());
         LoginDataAggregator loginDataAggregator = new LoginDataAggregator();
         loginListTable.processData(loginDataAggregator, "SELECT * FROM " + loginListTable.getName() + " ORDER BY " + uuidColumn.getName() + " ASC");
 
+        TimeManagement.sendInfo(mainTable.getName());
         DataAggregator mainDataAggregator = new DataAggregator();
         mainTable.processData(mainDataAggregator, "SELECT * FROM " + mainTable.getName());
     }
