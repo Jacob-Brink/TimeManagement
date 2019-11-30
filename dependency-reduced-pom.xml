@@ -37,6 +37,10 @@
       <id>mysql</id>
       <url>https://mvnrepository.com/artifact/mysql/mysql-connector-java</url>
     </repository>
+    <repository>
+      <id>ess-repo</id>
+      <url>https://ci.ender.zone/plugin/repository/everything/</url>
+    </repository>
   </repositories>
   <dependencies>
     <dependency>
@@ -64,6 +68,46 @@
         <exclusion>
           <artifactId>snakeyaml</artifactId>
           <groupId>org.yaml</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>net.ess3</groupId>
+      <artifactId>EssentialsX</artifactId>
+      <version>2.16.1</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>paperlib</artifactId>
+          <groupId>io.papermc</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>NMSProvider</artifactId>
+          <groupId>net.ess3</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>UpdatedMetaProvider</artifactId>
+          <groupId>net.ess3</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>1_8_R1Provider</artifactId>
+          <groupId>net.ess3</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>1_8_R2Provider</artifactId>
+          <groupId>net.ess3</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>LegacyProvider</artifactId>
+          <groupId>net.ess3</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>ReflectionProvider</artifactId>
+          <groupId>net.ess3</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>FlattenedProvider</artifactId>
+          <groupId>net.ess3</groupId>
         </exclusion>
       </exclusions>
     </dependency>

@@ -17,8 +17,8 @@ public class FirstLoginCommand extends CommandAsset {
     @Override
     public void execute(CommandSender sender, String[] args) {
         Player player = (Player) sender;
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm");
-        player.sendMessage(ChatColor.BOLD + "First Login Date: " + ChatColor.GRAY + sdf.format(Calculations.getFirstLoginDate(player.getUniqueId())));
+        /*SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm");
+        player.sendMessage(ChatColor.BOLD + "First Login Date: " + ChatColor.GRAY + sdf.format(Calculations.getFirstLoginDate(player.getUniqueId())));*/
     }
 
 }

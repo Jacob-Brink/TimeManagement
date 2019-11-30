@@ -2,6 +2,7 @@ package Main;
 
 import Commands.FirstLoginCommand;
 import Commands.TotalTimeCommand;
+import Listeners.AFKStatusChangeListener;
 import Listeners.LogInListener;
 import Listeners.LogOutListener;
 import Storage.*;
@@ -18,7 +19,7 @@ import java.util.Date;
 import java.util.TreeSet;
 import java.util.UUID;
 
-public class TimeManagement extends JavaPlugin implements TimeManagementAPI {
+public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI {
 
     private final static String prefix = "" + ChatColor.GREEN + "VertX" + ChatColor.WHITE + " TimeSheet: " + ChatColor.GRAY;
     private final static String errorPrefix = "" + ChatColor.RED + "VertX" + ChatColor.WHITE + " TimeSheet(ERROR): " + ChatColor.GRAY;
@@ -72,9 +73,12 @@ public class TimeManagement extends JavaPlugin implements TimeManagementAPI {
 
         getServer().getPluginManager().registerEvents(new LogInListener(), this);
         getServer().getPluginManager().registerEvents(new LogOutListener(), this);
+        getServer().getPluginManager().registerEvents(new AFKStatusChangeListener(), this);
 
         getCommand("totaltime").setExecutor(new TotalTimeCommand("totaltime", "time.total"));
         getCommand("firstlogin").setExecutor(new FirstLoginCommand("firstlogin", "time.birth"));
+
+
     }
 
     private void createConfig() {
@@ -94,7 +98,7 @@ public class TimeManagement extends JavaPlugin implements TimeManagementAPI {
         }
 
     }
-
+/*
     @Override
     public void onDisable() {
         Storage.saveState(true);
@@ -132,6 +136,7 @@ public class TimeManagement extends JavaPlugin implements TimeManagementAPI {
 
     @Override
     public TreeSet<LoginData> getData(UUID uuid) {
-        return Storage.getTimePlayer(uuid).getAllLogins();
-    }
+        TreeSet<LoginData> loginData = Storage.getTimePlayer(uuid).getAllLogins();
+        return loginData;
+    }*/
 }

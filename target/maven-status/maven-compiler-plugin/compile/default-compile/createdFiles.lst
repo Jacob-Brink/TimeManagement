@@ -6,3 +6,4 @@ Storage/MySQLConnectionPool.class
 Main/Calculations.class
 Storage/TimePlayer.class
 Storage/LoginData.class
+Listeners/AFKStatusChangeListener.class

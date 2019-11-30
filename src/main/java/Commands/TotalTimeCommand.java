@@ -23,11 +23,11 @@ public class TotalTimeCommand extends CommandAsset {
         UUID uuid = player.getUniqueId();
 
         long minutesInHour = 60;
-
+/*
         BigInteger totalMinutes = Calculations.getTotalPlayTimeMinutes(uuid);
         BigInteger totalHours = totalMinutes.divide(BigInteger.valueOf(minutesInHour));
         totalMinutes = totalMinutes.mod(BigInteger.valueOf(minutesInHour));
 
-        player.sendMessage(ChatColor.BOLD + "Total Time: " + ChatColor.GRAY + "" + totalHours.toString() + "h " + totalMinutes.toString() + "m");
+        player.sendMessage(ChatColor.BOLD + "Total Time: " + ChatColor.GRAY + "" + totalHours.toString() + "h " + totalMinutes.toString() + "m");*///todo
     }
 }

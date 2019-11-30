@@ -6,13 +6,17 @@ import org.bukkit.Bukkit;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.TreeSet;
 import java.util.UUID;
 
 public class Storage {
 
     private static HashMap<UUID, TimePlayer> uuidToTimePlayer = new HashMap<UUID, TimePlayer>();
-    private static MySQLTable.ColumnWrapper uuid, loginTime, millPlayed;
+    private static LoginDataAggregator loginDataAggregator;
+    private static MySQLTable.ColumnWrapper uuidColumn, loginTime, millPlayed;
     private static MySQLTable mainTable;
+    private static MySQLTable loginListTable;
+    private static MySQLTable.ColumnWrapper totalPlayTimeColumn, firstLoginTimeColumn, totalPlayTimeAFKColumn, loginCountColumn;
 
     public static Connection getConnection() {
         try {
@@ -25,24 +29,21 @@ public class Storage {
 
     public static void saveState(boolean saveOnDisable) {
 
-        String sql = "INSERT INTO " + mainTable.getName() + "(" + uuid.getName() + "," + loginTime.getName() + "," + millPlayed.getName() + ") VALUES";
+        String sql = "INSERT INTO " + mainTable.getName() + "(" + uuidColumn.getName() + "," + loginTime.getName() + "," + millPlayed.getName() + ") VALUES";
 
         ArrayList<String> strings = new ArrayList<String>();
         for (TimePlayer timePlayer : uuidToTimePlayer.values()) {
-            for (LoginData login : timePlayer.getNewLogins()) {
+            for (LoginData login : timePlayer.getLoginListWrapper().getNewLoginData()) {
                 TimeManagement.sendInfo("Storing new logins");
                 strings.add("(\"" + timePlayer.getUUID().toString() + "\"," + login.getStart() + "," + login.getMill() + ")");
             }
 
-            //add current session since onDisable is called before all players are forced to log out for whatever reason
-            if (saveOnDisable && timePlayer.isActive()) {
-                TimeManagement.sendInfo("Storing new logins on disable");
-                TimeManagement.sendInfo(timePlayer.getCurrentSessionDuration() + " milliseconds of play");
-
-                strings.add("(\"" + timePlayer.getUUID().toString() + "\"," + timePlayer.getCurrentSessionStart() + "," + timePlayer.getCurrentSessionDuration() + ")");
+            if (timePlayer.getLoginListWrapper().isOnline()) {
+                LoginData currentLoginData = timePlayer.getLoginListWrapper().getCurrentLoginData();
+                strings.add("(\"" + timePlayer.getUUID().toString() + "\"," + currentLoginData.getStart() + "," + currentLoginData.getMill() + ")");
             }
 
-            timePlayer.setNewToStored();
+            timePlayer.getLoginListWrapper().setNewToStored();
         }
 
         if (strings.size() == 0)
@@ -90,31 +91,36 @@ public class Storage {
                 TimeManagement.sendError("Failed to send data to server. " + entriesSaved + " entries were unrecorded.");
             }
         }
-
-
-
     }
 
     public static TimePlayer getTimePlayer(UUID uuid) {
         return uuidToTimePlayer.get(uuid);
     }
 
-    public static class DataAggregator extends MySQLTable.Aggregator {
-        TimePlayer timePlayer = null;
+    public static void changeAFKStatus(UUID uuid, boolean afk) {
+        TimePlayer timePlayer = uuidToTimePlayer.get(uuid);
+        timePlayer.setAFK(afk);
+    }
+
+    public static class LoginDataAggregator extends MySQLTable.Aggregator {
+        private HashMap<UUID, TreeSet<LoginData>> timePlayersLoginData = new HashMap<UUID, TreeSet<LoginData>>();
+        private UUID uuid = null;
+        private TreeSet<LoginData> userLoginDataAccumulator = new TreeSet<LoginData>();
+
         protected void setup() {
-            registerColumn(uuid, new AggregatorCallbackFunction() {
+            registerColumn(uuidColumn, new AggregatorCallbackFunction() {
                 @Override
                 public void call(ResultSet results) throws SQLException {
                     //store timePlayer if last timePlayer was not null
-                    if (timePlayer != null) {
-                        uuidToTimePlayer.put(timePlayer.getUUID(), timePlayer);
+                    if (uuid != null) {
+                        timePlayersLoginData.put(uuid, userLoginDataAccumulator);
+                        userLoginDataAccumulator = new TreeSet<LoginData>();
                     }
 
                     if (results != null) {
                         //make new timePlayer on change of uuid column
-                        String uuidString = results.getString(uuid.getName());
-                        UUID uuid = UUID.fromString(uuidString);
-                        timePlayer = new TimePlayer(uuid);
+                        String uuidString = results.getString(uuidColumn.getName());
+                        uuid = UUID.fromString(uuidString);
                     }
 
                 }
@@ -126,10 +132,39 @@ public class Storage {
                     if (results != null) {
                         long login = results.getLong(loginTime.getName());
                         long playtime = results.getLong(millPlayed.getName());
-                        timePlayer.addStoredLogin(new LoginData(login, playtime));
+                        userLoginDataAccumulator.add(new LoginData(login, playtime));
                     }
                 }
             });
+        }
+
+        public TreeSet<LoginData> getLoginDataSet(final UUID uuid) {
+            return timePlayersLoginData.get(uuid);
+        }
+    }
+
+    public static class DataAggregator extends MySQLTable.Aggregator {
+
+        @Override
+        protected void setup() {
+            registerColumn(uuidColumn, new AggregatorCallbackFunction() {
+                @Override
+                public void call(ResultSet results) throws SQLException {
+                    if (results != null) {
+                        String uuidString = results.getString(uuidColumn.getName());
+                        UUID uuid = UUID.fromString(uuidString);
+                        long totalPlayTime = results.getLong(totalPlayTimeColumn.getName());
+                        long totalPlayTimeAFK = results.getLong(totalPlayTimeAFKColumn.getName());
+                        long firstLoginTime = results.getLong(firstLoginTimeColumn.getName());
+                        long loginCount = results.getLong(loginCountColumn.getName());
+
+                        TimePlayer timePlayer = new TimePlayer(uuid, loginDataAggregator.getLoginDataSet(uuid), firstLoginTime, totalPlayTimeAFK, totalPlayTime, loginCount);
+                        uuidToTimePlayer.put(uuid, timePlayer);
+
+                    }
+                };
+            });
+
         }
     }
 
@@ -149,24 +184,41 @@ public class Storage {
         timePlayer.loggedOut();
     }
 
-
     private static void setupTables() {
-        uuid = new MySQLTable.ColumnWrapper("UUID", "VARCHAR(36) NOT NULL", "");
+        uuidColumn = new MySQLTable.ColumnWrapper("UUID", "VARCHAR(36) NOT NULL", "");
         loginTime = new MySQLTable.ColumnWrapper("LOGIN", "BIGINT NOT NULL", "");
         millPlayed = new MySQLTable.ColumnWrapper("MILL", "BIGINT NOT NULL", "");
 
-        mainTable = new MySQLTable("VERTX_TIME", uuid, loginTime, millPlayed);
+        totalPlayTimeColumn = new MySQLTable.ColumnWrapper("TOTAL_PLAY_TIME", "BIGINT NOT NULL", "");
+        totalPlayTimeAFKColumn = new MySQLTable.ColumnWrapper("TOTAL_NON_AFK_PLAY_TIME", "BIGINT NOT NULL", "");
+        firstLoginTimeColumn = new MySQLTable.ColumnWrapper("FIRST_LOGIN_TIME", "BIGINT NOT NULL", "");
+        loginCountColumn = new MySQLTable.ColumnWrapper("LOGIN_COUNT", "BIGINT NOT NULL", "");
+
+        loginListTable = new MySQLTable("VERTX_TIME_LOGIN_LIST", uuidColumn, loginTime, millPlayed);
+
+        if (loginListTable.create())
+            TimeManagement.sendInfo("MySQL loginList table is setup!");
+        else
+           TimeManagement.sendError("MySQL table with name \"" + loginListTable.getName() + "\" is not setup correctly... Please stop server and attend to this issue");
+
+        mainTable = new MySQLTable("VERTX_TIME_MAIN", uuidColumn, totalPlayTimeColumn, totalPlayTimeAFKColumn, firstLoginTimeColumn, loginCountColumn);
 
         if (mainTable.create())
-            TimeManagement.sendInfo("MySQL tables are setup!");
+            TimeManagement.sendInfo("MySQL table \"" + mainTable.getName() + "\" are setup!");
         else
-           TimeManagement.sendError("MySQL tables not setup correctly... Please stop server and attend to this issue, since this plugin will not record data when not working");
+            TimeManagement.sendError("MySQL table with name \"" + mainTable.getName() + "\" is not setup correctly... Please stop server and attend to this issue");
 
     }
 
     public static void loadState() {
         setupTables();
-        DataAggregator dataAggregator = new DataAggregator();
-        mainTable.processData(dataAggregator, "SELECT * FROM " + mainTable.getName() + " ORDER BY " + uuid.getName() + " ASC");
+
+        LoginDataAggregator loginDataAggregator = new LoginDataAggregator();
+        loginListTable.processData(loginDataAggregator, "SELECT * FROM " + loginListTable.getName() + " ORDER BY " + uuidColumn.getName() + " ASC");
+
+        DataAggregator mainDataAggregator = new DataAggregator();
+        mainTable.processData(mainDataAggregator, "SELECT * FROM " + mainTable.getName());
     }
+
 }
+

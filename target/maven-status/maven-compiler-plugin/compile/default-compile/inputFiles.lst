@@ -10,6 +10,7 @@
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Storage/LoginData.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Listeners/LogInListener.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Main/TimeManagement.java
+/home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Listeners/AFKStatusChangeListener.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Commands/TotalTimeCommand.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Storage/Storage.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Commands/FirstLoginCommand.java

@@ -1,9 +1,9 @@
 #database
-host: "na-sql.pebblehost.com"
+host: "Your Database Host"
 port: 3306
-database: "customer_82175"
-username: "customer_82175"
-password: "17aad5a450"
+database: "Your Database"
+username: "Your Username"
+password: "Your Password"
 
 #number of minutes between each mysql save
 frequency: 15
