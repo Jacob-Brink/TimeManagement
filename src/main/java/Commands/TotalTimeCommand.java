@@ -1,6 +1,7 @@
 package Commands;
 
 import Main.TimeManagement;
+import Storage.DataWrapper;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -19,7 +20,12 @@ public class TotalTimeCommand extends CommandAsset {
         UUID uuid = player.getUniqueId();
 
         long currentTime = System.currentTimeMillis();
-        long milliseconds = TimeManagement.getLoginHandler().getDataWrapper(uuid).getRunningTotalTime(currentTime);
+        DataWrapper data = TimeManagement.getLoginHandler().getDataWrapper(uuid);
+        if (data == null) {
+            player.sendMessage("Your data is still being loaded at this time. Please wait and try again");
+            return;
+        }
+        long milliseconds = data.getRunningTotalTime(currentTime);
         long seconds = (milliseconds / 1000) % 60;
         long minutes = (milliseconds / 60000);
         player.sendMessage(ChatColor.BOLD + "Total Time: " + ChatColor.GRAY + "" + minutes + "m " + seconds + "s ");//todo

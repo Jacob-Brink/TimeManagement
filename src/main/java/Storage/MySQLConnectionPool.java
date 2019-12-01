@@ -57,7 +57,7 @@ public class MySQLConnectionPool {
         config.addDataSourceProperty("cacheResultSetMetadata", true);
 
         //config.setMaximumPoolSize(20);
-        //config.setConnectionTimeout(30000);
+        config.setConnectionTimeout(3000);
 
 
         ds = new HikariDataSource(config);

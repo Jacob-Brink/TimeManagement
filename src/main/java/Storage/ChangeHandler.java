@@ -64,11 +64,11 @@ public class ChangeHandler {
             if (dataFuture.isDone()) {
                 try {
 
-                    final DataWrapper data = dataFuture.get(0, null);
+                    DataWrapper data = dataFuture.get();
 
                     //skip update command if data is not immediately available
                     if (data != null && data.isDoing()) {
-
+                        TimeManagement.sendInfo("data is not null and isDoing()");
                         final long newRunningTotal = data.getRunningTotalTime(time);
 
                         if (async) {
@@ -85,8 +85,9 @@ public class ChangeHandler {
 
                     }
 
-                } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                } catch (ExecutionException | InterruptedException e) {
                     e.printStackTrace();
+                    TimeManagement.sendError("ERROR");
                 }
 
             }
@@ -98,8 +99,8 @@ public class ChangeHandler {
         CompletableFuture<DataWrapper> future = players.get(uuid);
         if (future != null) {
             try {
-                return players.get(uuid).get(0, null);
-            } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                return players.get(uuid).get();
+            } catch (ExecutionException | InterruptedException | NullPointerException e) {
                 e.printStackTrace();
             }
         }
@@ -153,12 +154,14 @@ public class ChangeHandler {
             @Override
             public boolean run() {
                 try (Connection connection = MySQLConnectionPool.getConnection()) {
+                    TimeManagement.sendInfo("Inserting login time");
                     //1. insert new login on login sheet
                     PreparedStatement stmt = connection.prepareStatement("INSERT INTO " + timeTable.getName() + " (" + uuidColumn.getName() + ", " + inColumn.getName() +") VALUES(?, ?)");
                     stmt.setString(1, uuid);
                     stmt.setLong(2, timeStamp);
                     stmt.execute();
 
+                    TimeManagement.sendInfo("Updating accumulator table");
                     //2. either insert if new or update accumulator row for columns with start count and first start
                     PreparedStatement accStatement = connection.prepareStatement("INSERT INTO " + accumulatorTable.getName() +
                             "(" + accUUIDColumn.getName() + ", " + startCountColumn.getName() + ", " + firstStartColumn.getName() + ")" +
@@ -178,39 +181,45 @@ public class ChangeHandler {
             }
         });
 
-        CompletableFuture<DataWrapper> dataFuture = CompletableFuture.supplyAsync(() -> {
-            try (Connection connection = MySQLConnectionPool.getConnection()) {
-                PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " + accumulatorTable.getName() + " WHERE " + accUUIDColumn.getName() + "=?");
-                stmt.setString(1, uuid);
-                ResultSet results = stmt.executeQuery();
+        if (!players.contains(playerUUID)) {
+            CompletableFuture<DataWrapper> dataFuture = CompletableFuture.supplyAsync(() -> {
+                DataWrapper dataWrapper;
+                try (Connection connection = MySQLConnectionPool.getConnection()) {
+                    TimeManagement.sendInfo("Loading player from database");
+                    PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " + accumulatorTable.getName() + " WHERE " + accUUIDColumn.getName() + "=?");
+                    stmt.setString(1, uuid);
+                    ResultSet results = stmt.executeQuery();
 
-                long total, startCount, firstStart;
-                if (results.next()) {
-                    startCount = results.getLong(startCountColumn.getName());
-                    firstStart = results.getLong(firstStartColumn.getName());
-                    try {
-                        total = results.getLong(totalDoingColumn.getName());
-                    } catch (SQLException e) {
-                        total = 0;
+                    long total, startCount, firstStart;
+                    if (results.next()) {
+                        startCount = results.getLong(startCountColumn.getName());
+                        firstStart = results.getLong(firstStartColumn.getName());
+                        try {
+                            total = results.getLong(totalDoingColumn.getName());
+                        } catch (SQLException e) {
+                            total = 0;
+                        }
+                        // = new DataWrapper(playerUUID, firstStart, total, startCount, timeStamp);
+                        //dataWrapper.setDoing(true);
+                        dataWrapper = new DataWrapper(playerUUID, firstStart, total, startCount, timeStamp);
+
+                    } else {
+                        dataWrapper = new DataWrapper(playerUUID, timeStamp, 0, 1, timeStamp);
                     }
-                    DataWrapper dataWrapper;// = new DataWrapper(playerUUID, firstStart, total, startCount, timeStamp);
-                    //dataWrapper.setDoing(true);
-                    return new DataWrapper(playerUUID, firstStart, total, startCount, timeStamp);
+                    dataWrapper.setDoing(true);
+                    return dataWrapper;
 
-                } else {
-                    return new DataWrapper(playerUUID, timeStamp, 0, 1, timeStamp);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    TimeManagement.sendError("could not load player");
                 }
 
-            } catch (SQLException e) {
-                e.printStackTrace();
-                TimeManagement.sendError("This should not have happened!");
-            }
+                return null;
 
-            return null;
+            });
+            players.put(playerUUID, dataFuture);
+        }
 
-        });
-
-        players.put(playerUUID, dataFuture);
 
     }
 
@@ -245,29 +254,31 @@ public class ChangeHandler {
         //todo: wait for players to get populated with completed future
         CompletableFuture<DataWrapper> data = players.get(player.getUniqueId());
 
-        CompletableFuture<Void> timeOutFuture = data.thenCompose((dataWrap) ->
+        //1. when dataWrap is loaded, set doing to false
+        data.thenCompose((dataWrap) ->
                 CompletableFuture.supplyAsync(() -> {
                     if (dataWrap != null)
+                        TimeManagement.sendInfo("Setting " + player.getUniqueId() + " \"doing\" to false");
                         dataWrap.setDoing(false);
                     return null;
                 })
         );
 
+        //2. update player
         this.blockingQueue.add(new SequentialRunnable() {
             @Override
             public boolean run() {
                 try {
-                    DataWrapper dataWrapper = data.get(40, null);
+                    DataWrapper dataWrapper = data.get();
                     if (dataWrapper != null) {
                         //todo: this assumes that this happen after timeIn retreives data and stores it in the datawrapper
                         //todo: make this work in the case that it doesn't happen like that
+                        TimeManagement.sendInfo("updating player with uuid " + player.getUniqueId());
                         update(player.getUniqueId(), time, dataWrapper.getRunningTotalTime(time));
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (TimeoutException e) {
                     e.printStackTrace();
                 }
                 return true;
