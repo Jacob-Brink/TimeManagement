@@ -58,7 +58,7 @@ public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI
         getServer().getPluginManager().registerEvents(new AFKStatusChangeListener(), this);
 
         getCommand("totaltime").setExecutor(new TotalTimeCommand("totaltime", "time.total"));
-        getCommand("firstlogin").setExecutor(new FirstLoginCommand("firstlogin", "time.birth"));
+        //getCommand("firstlogin").setExecutor(new FirstLoginCommand("firstlogin", "time.birth"));
     }
 
     private void createConfig() {
@@ -82,7 +82,10 @@ public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI
     @Override
     public void onDisable() {
         //Storage.saveState(true);
+        loginHandler.finish();
+        afkHandler.finish();
         MySQLConnectionPool.close();
+
     }
 /*
     @Override

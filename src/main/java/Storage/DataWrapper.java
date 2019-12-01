@@ -4,7 +4,7 @@ import Main.TimeManagement;
 
 import java.util.UUID;
 
-public class DataWrapper {
+public class DataWrapper{
 
     private boolean isDoing;
     private long firstStart, totalTime, startCount;
@@ -68,8 +68,8 @@ public class DataWrapper {
         this.startCount = startCount;
     }
 
-    public long getRunningTotalTime() {
+    public long getRunningTotalTime(final long currentTime) {
         //TimeManagement.sendInfo("Total: " + totalTime + ", CurrentTime: " + currentTime() + "lastStart: " + lastStart);
-        return totalTime + currentTime() - lastStart;
+        return totalTime + currentTime - lastStart;
     }
 }

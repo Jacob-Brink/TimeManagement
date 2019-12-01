@@ -10,9 +10,3 @@ commands:
     permissions: []
     permission-message: You need time.total to use this.
     usage: "Usage: /totaltime"
-  firstlogin:
-    description: get the the first time you logged in
-    permission: time.birth
-    permissions: []
-    permission-message: You need time.birth to use this.
-    usage: "Usage: /firstlogin"

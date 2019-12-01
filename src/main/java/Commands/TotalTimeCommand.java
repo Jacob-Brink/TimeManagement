@@ -17,13 +17,11 @@ public class TotalTimeCommand extends CommandAsset {
     public void execute(CommandSender sender, String[] args) {
         Player player = (Player) sender;
         UUID uuid = player.getUniqueId();
-/*
-        long minutesInHour = 60;
 
-        BigInteger totalMinutes = Calculations.getTotalPlayTimeMinutes(uuid);
-        BigInteger totalHours = totalMinutes.divide(BigInteger.valueOf(minutesInHour));
-        totalMinutes = totalMinutes.mod(BigInteger.valueOf(minutesInHour));
-*/
-        player.sendMessage(ChatColor.BOLD + "Total Time: " + ChatColor.GRAY + "" + TimeManagement.getLoginHandler().getDataWrapper(uuid).getRunningTotalTime() + "ms");//todo
+        long currentTime = System.currentTimeMillis();
+        long milliseconds = TimeManagement.getLoginHandler().getDataWrapper(uuid).getRunningTotalTime(currentTime);
+        long seconds = (milliseconds / 1000) % 60;
+        long minutes = (milliseconds / 60000);
+        player.sendMessage(ChatColor.BOLD + "Total Time: " + ChatColor.GRAY + "" + minutes + "m " + seconds + "s ");//todo
     }
 }
