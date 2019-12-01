@@ -3,28 +3,22 @@ package Main;
 import Commands.FirstLoginCommand;
 import Commands.TotalTimeCommand;
 import Listeners.AFKStatusChangeListener;
-import Listeners.LogInListener;
-import Listeners.LogOutListener;
+import Listeners.LogInOutListener;
 import Storage.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import TimeManagementAPI.TimeManagementAPI;
 
 import java.io.File;
-import java.math.BigInteger;
-import java.util.Date;
-import java.util.TreeSet;
-import java.util.UUID;
 
 public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI {
 
     private final static String prefix = "" + ChatColor.GREEN + "VertX" + ChatColor.WHITE + " TimeSheet: " + ChatColor.GRAY;
     private final static String errorPrefix = "" + ChatColor.RED + "VertX" + ChatColor.WHITE + " TimeSheet(ERROR): " + ChatColor.GRAY;
     private static JavaPlugin plugin;
-    private int frequency;
+    private static ChangeHandler afkHandler, loginHandler;
 
     public static JavaPlugin getPlugin() {
         return plugin;
@@ -38,47 +32,33 @@ public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI
         Bukkit.getLogger().info(prefix + infoMessage);
     }
 
+    public static void disable() {
+        TimeManagement.sendError("Ran into an error that will break plugin. Disabling...");
+        Bukkit.getPluginManager().disablePlugin(getPlugin());
+    }
+
+    public static ChangeHandler getAFKHandler() {
+        return afkHandler;
+    }
+
+    public static ChangeHandler getLoginHandler() {
+        return loginHandler;
+    }
 
     @Override
     public void onEnable() {
         plugin = this;
 
         createConfig();
-
-        frequency = getConfig().getInt("frequency");
-
-        final int ticks = 20*60*frequency;
-
-        new BukkitRunnable() {
-
-            boolean firstTime = true;
-
-            public void run() {
-                if (firstTime) {
-                    firstTime = false;
-                } else {
-                    sendInfo("Saving state...");
-                    Storage.saveState(false);
-                }
-            }
-
-        }.runTaskTimer(this, 0l, ticks);
+        afkHandler = new ChangeHandler("GO_AFK", "GO_NO_AFK", "AFK");
+        loginHandler = new ChangeHandler("LOGIN", "LOGOUT", "LOGINS");
 
 
-        Storage.loadState();
-
-        for(Player player : Bukkit.getOnlinePlayers()) {
-            Storage.getTimePlayer(player.getUniqueId()).loggedIn();
-        }
-
-        getServer().getPluginManager().registerEvents(new LogInListener(), this);
-        getServer().getPluginManager().registerEvents(new LogOutListener(), this);
+        getServer().getPluginManager().registerEvents(new LogInOutListener(), this);
         getServer().getPluginManager().registerEvents(new AFKStatusChangeListener(), this);
 
         getCommand("totaltime").setExecutor(new TotalTimeCommand("totaltime", "time.total"));
         getCommand("firstlogin").setExecutor(new FirstLoginCommand("firstlogin", "time.birth"));
-
-
     }
 
     private void createConfig() {
@@ -101,7 +81,7 @@ public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI
 
     @Override
     public void onDisable() {
-        Storage.saveState(true);
+        //Storage.saveState(true);
         MySQLConnectionPool.close();
     }
 /*

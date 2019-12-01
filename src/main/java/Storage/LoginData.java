@@ -1,23 +1,20 @@
 package Storage;
 
-public class LoginData implements Comparable<LoginData> {
-    private long start, mill;
+public class LoginData {
 
-    public LoginData(final long start, final long mill) {
-        this.start = start;
-        this.mill = mill;
+    private long login, logout;
+
+    public LoginData(final long login, final long logout) {
+        this.login = login;
+        this.logout = logout;
     }
 
-    public long getStart() {
-        return this.start;
+    public long getLogin() {
+        return this.login;
     }
 
-    public long getMill() {
-        return this.mill;
+    public long getLogout() {
+        return this.logout;
     }
 
-    @Override
-    public int compareTo(LoginData o) {
-        return Long.compare(this.start, o.getStart());
-    }
 }

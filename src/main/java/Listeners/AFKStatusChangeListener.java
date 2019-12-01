@@ -10,10 +10,16 @@ import org.bukkit.event.Listener;
 
 public class AFKStatusChangeListener implements Listener {
     @EventHandler
-    public void onLogin(AfkStatusChangeEvent e) {
+    public void onAFKChange(AfkStatusChangeEvent e) {
         String playerName = e.getAffected().getName();
         Player player = Bukkit.getPlayer(playerName);
-        Storage.changeAFKStatus(player.getUniqueId(), e.getValue());
+
+        boolean nowAFK = e.getValue();
+        if (nowAFK) {
+            TimeManagement.getAFKHandler().timeIn(player);
+        } else {
+            TimeManagement.getAFKHandler().timeOut(player);
+        }
 
     }
 }

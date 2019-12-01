@@ -61,7 +61,7 @@ public class MySQLTable {
             return null;
         }
 
-        public String getName() {
+        final public String getName() {
             return this.name;
         }
 
@@ -86,27 +86,24 @@ public class MySQLTable {
      */
     private boolean isSetCorrectly() {
         List<ColumnWrapper> list = new ArrayList<ColumnWrapper>(columns.values());
-        Connection connection = null;
-        try {
-            connection = MySQLConnectionPool.getConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        for (ColumnWrapper column : list) {
-            Bukkit.getLogger().info(" - " + column.getName());
-            try {
-                DatabaseMetaData md = connection.getMetaData();
-                ResultSet rs = md.getColumns(null, null, getName(), column.getName());
-                if (rs.next())
-                    continue;
-            } catch (SQLException e) {
-                e.printStackTrace();
-                Bukkit.getLogger().info("MySQLTable->isSetCorrectly: Something went wrong while checking columns.");
+        try (Connection connection = MySQLConnectionPool.getConnection()){
+            for (ColumnWrapper column : list) {
+                Bukkit.getLogger().info(" - " + column.getName());
+                try {
+                    DatabaseMetaData md = connection.getMetaData();
+                    ResultSet rs = md.getColumns(null, null, getName(), column.getName());
+                    if (rs.next())
+                        continue;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    Bukkit.getLogger().info("MySQLTable->isSetCorrectly: Something went wrong while checking columns.");
+                    return false;
+                }
+                Bukkit.getLogger().info("   --> No column found. Please either remove this table entirely or add this column to the table.");
                 return false;
             }
-            Bukkit.getLogger().info("   --> No column found. Please either remove this table entirely or add this column to the table.");
+        } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
         return true;
@@ -119,8 +116,8 @@ public class MySQLTable {
      */
     private boolean exists() {
         ResultSet tables = null;
-        try {
-            tables = MySQLConnectionPool.getConnection().getMetaData().getTables(null, null, getName(), null);
+        try (Connection connection = MySQLConnectionPool.getConnection()){
+            tables = connection.getMetaData().getTables(null, null, getName(), null);
             return tables.next();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -162,8 +159,8 @@ public class MySQLTable {
         Bukkit.getLogger().info("Creating table: \"CREATE TABLE " + getName() + "(" + sql + ")\"");
 
         Statement statement = null;
-        try {
-            statement = MySQLConnectionPool.getConnection().createStatement();
+        try (Connection connection = MySQLConnectionPool.getConnection()){
+            statement = connection.createStatement();
             statement.executeUpdate("CREATE TABLE " + getName() + "(" + sql + ")");
         } catch (SQLException e) {
             e.printStackTrace();
@@ -292,8 +289,8 @@ public class MySQLTable {
 
     public static void processData(Aggregator aggregator, String sql) {
         ResultSet results;
-        try {
-            PreparedStatement statement = MySQLConnectionPool.getConnection().prepareStatement(sql);
+        try (Connection connection = MySQLConnectionPool.getConnection()){
+            PreparedStatement statement = connection.prepareStatement(sql);
             results = statement.executeQuery();
             int rowCount = 0;
             while (results.next()) {

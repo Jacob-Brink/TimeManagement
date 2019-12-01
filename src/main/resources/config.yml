@@ -5,5 +5,4 @@ database: "Your Database"
 username: "Your Username"
 password: "Your Password"
 
-#number of minutes between each mysql save
-frequency: 15
+#
