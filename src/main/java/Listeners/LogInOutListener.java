@@ -19,5 +19,8 @@ public class LogInOutListener implements Listener {
     public void onLogout(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         TimeManagement.getLoginHandler().timeOut(player);
+        if (TimeManagement.getAFKHandler().getDataWrapper(player.getUniqueId()).isDoing()) {
+            TimeManagement.getAFKHandler().timeOut(player);
+        }
     }
 }
