@@ -44,6 +44,7 @@ public class MySQLConnectionPool {
             Bukkit.getLogger().info("database");
         }
 
+        TimeManagement.sendInfo("Connecting to HOST: " + host + " on PORT: " + port + " FOR DATABASE " + database);
         config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "");
         config.setUsername(username);
         config.setPassword(password);

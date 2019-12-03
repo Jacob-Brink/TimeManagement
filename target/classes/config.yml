@@ -4,3 +4,6 @@ port: 3306
 database: "customer_82175"
 username: "customer_82175"
 password: "17aad5a450"
+
+#debug mode, set TRUE if you want debug messages
+debugmode: true

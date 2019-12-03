@@ -1,25 +1,24 @@
 package TimeManagementAPI;
 
+import Storage.DataWrapper;
 import Storage.LoginData;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public interface TimeManagementAPI {
-    BigInteger getTotalPlayTimeMinutes(final UUID uuid);
+    long getTotalTime(final UUID uuid) throws Exception;
 
-    BigInteger getAverageMinutesPerGameSession(final UUID uuid);
+    long getTotalAFKTime(final UUID uuid) throws Exception;
 
-    int getLoginNumbers(final UUID uuid);
+    long getLoginCount(final UUID uuid) throws Exception;
 
-    double getDaysSinceFirstLogin(final UUID uuid);
+    long getFirstStart(final UUID uuid) throws Exception;
 
-    long getLongestSession(final UUID uuid);
-
-    Date getFirstLoginDate(UUID uuid);
-
-    TreeSet<LoginData> getData(UUID uuid);
+    CompletableFuture<ArrayList<LoginData>> getEachLogin(final UUID uuid);
 
 }

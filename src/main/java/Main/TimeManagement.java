@@ -1,5 +1,6 @@
 package Main;
 
+import Commands.TestCommand;
 import Commands.TotalTimeCommand;
 import Listeners.AFKStatusChangeListener;
 import Listeners.LogInOutListener;
@@ -7,15 +8,20 @@ import Storage.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
+import TimeManagementAPI.TimeManagementAPI;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI {
+public class TimeManagement extends JavaPlugin implements TimeManagementAPI {
 
-    private final static String prefix = "" + ChatColor.GREEN + "VertX" + ChatColor.WHITE + " TimeSheet: " + ChatColor.GRAY;
-    private final static String errorPrefix = "" + ChatColor.RED + "VertX" + ChatColor.WHITE + " TimeSheet(ERROR): " + ChatColor.GRAY;
+    public final static String prefix = "" + ChatColor.GREEN + "VertX" + ChatColor.WHITE + " TimeSheet: " + ChatColor.GRAY;
+    public final static String errorPrefix = "" + ChatColor.RED + "VertX" + ChatColor.WHITE + " TimeSheet(ERROR): " + ChatColor.GRAY;
     private static JavaPlugin plugin;
-    private static ChangeHandler afkHandler, loginHandler;
+    private static ChangeHandler afkHandler, loginHandler, testHandler;
+    public static boolean debug;
 
     public static JavaPlugin getPlugin() {
         return plugin;
@@ -27,6 +33,12 @@ public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI
 
     public static void sendInfo(String infoMessage) {
         Bukkit.getLogger().info(prefix + infoMessage);
+    }
+
+    public static void sendDebug(String infoMessage) {
+        if (debug) {
+            Bukkit.getLogger().info(prefix + infoMessage);
+        };
     }
 
     public static void disable() {
@@ -42,19 +54,23 @@ public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI
         return loginHandler;
     }
 
+    public static ChangeHandler getTestHandler() { return testHandler; }
+
     @Override
     public void onEnable() {
         plugin = this;
 
         createConfig();
+        debug = getConfig().getBoolean("debugmode");
         afkHandler = new ChangeHandler("GO_AFK", "GO_NO_AFK", "AFK");
         loginHandler = new ChangeHandler("LOGIN", "LOGOUT", "LOGINS");
-
+        testHandler = new ChangeHandler("TEST_IN", "TEST_OUT", "TEST_LOGIN");
 
         getServer().getPluginManager().registerEvents(new LogInOutListener(), this);
         getServer().getPluginManager().registerEvents(new AFKStatusChangeListener(), this);
 
         getCommand("totaltime").setExecutor(new TotalTimeCommand("totaltime", "time.total"));
+        getCommand("test").setExecutor(new TestCommand("test", "time.test"));
         //getCommand("firstlogin").setExecutor(new FirstLoginCommand("firstlogin", "time.birth"));
     }
 
@@ -84,40 +100,42 @@ public class TimeManagement extends JavaPlugin {//} implements TimeManagementAPI
         MySQLConnectionPool.close();
 
     }
-/*
+
     @Override
-    public BigInteger getTotalPlayTimeMinutes(UUID uuid) {
-        return Calculations.getTotalPlayTimeMinutes(uuid);
+    public long getTotalTime(UUID uuid) throws Exception {
+        DataWrapper data = loginHandler.getDataWrapper(uuid);
+        if (data == null)
+            throw new Exception("Data is unavailable");
+        return data.getRunningTotalTime(System.currentTimeMillis());
     }
 
     @Override
-    public BigInteger getAverageMinutesPerGameSession(UUID uuid) {
-        return Calculations.getAverageMinutesPerGameSession(uuid);
+    public long getTotalAFKTime(UUID uuid) throws Exception {
+        DataWrapper data = afkHandler.getDataWrapper(uuid);
+        if (data == null)
+            throw new Exception("Data is unavailable");
+        return data.getRunningTotalTime(System.currentTimeMillis());
     }
 
     @Override
-    public int getLoginNumbers(UUID uuid) {
-        return Calculations.getLoginNumbers(uuid);
+    public long getLoginCount(UUID uuid) throws Exception {
+        DataWrapper data = loginHandler.getDataWrapper(uuid);
+        if (data == null)
+            throw new Exception("Data is unavailable");
+        return data.getStartCount();
     }
 
     @Override
-    public double getDaysSinceFirstLogin(UUID uuid) {
-        return Calculations.getDaysSinceFirstLogin(uuid);
+    public long getFirstStart(UUID uuid) throws Exception {
+        DataWrapper data = loginHandler.getDataWrapper(uuid);
+        if (data == null)
+            throw new Exception("Data is unavailable");
+        return data.getFirstStart();
     }
 
     @Override
-    public long getLongestSession(UUID uuid) {
-        return Calculations.getLongestSession(uuid);
+    public CompletableFuture<ArrayList<LoginData>> getEachLogin(UUID uuid) {
+        return loginHandler.getAllData(uuid);
     }
 
-    @Override
-    public Date getFirstLoginDate(UUID uuid) {
-        return Calculations.getFirstLoginDate(uuid);
-    }
-
-    @Override
-    public TreeSet<LoginData> getData(UUID uuid) {
-        TreeSet<LoginData> loginData = Storage.getTimePlayer(uuid).getAllLogins();
-        return loginData;
-    }*/
 }

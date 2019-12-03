@@ -4,6 +4,7 @@
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Storage/SequentialRunnable.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Storage/MySQLConnectionPool.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Storage/AggregatorCallbackFunction.java
+/home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Commands/TestCommand.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Storage/MySQLTable.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/TimeManagementAPI/TimeManagementAPI.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Commands/AllowedUserType.java
@@ -14,4 +15,3 @@
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Commands/TotalTimeCommand.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Listeners/LogInOutListener.java
 /home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Storage/Storage.java
-/home/jacob/IdeaProjects/VertXTimeManagement/src/main/java/Commands/FirstLoginCommand.java
