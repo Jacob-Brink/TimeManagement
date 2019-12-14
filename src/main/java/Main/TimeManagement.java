@@ -1,6 +1,5 @@
 package Main;
 
-import Commands.TestCommand;
 import Commands.TotalTimeCommand;
 import Listeners.AFKStatusChangeListener;
 import Listeners.LogInOutListener;
@@ -56,6 +55,10 @@ public class TimeManagement extends JavaPlugin implements TimeManagementAPI {
 
     public static ChangeHandler getTestHandler() { return testHandler; }
 
+    public static void setPlugin(JavaPlugin p) {
+        plugin = p;
+    }
+
     @Override
     public void onEnable() {
         plugin = this;
@@ -70,7 +73,6 @@ public class TimeManagement extends JavaPlugin implements TimeManagementAPI {
         getServer().getPluginManager().registerEvents(new AFKStatusChangeListener(), this);
 
         getCommand("totaltime").setExecutor(new TotalTimeCommand("totaltime", "time.total"));
-        getCommand("test").setExecutor(new TestCommand("test", "time.test"));
         //getCommand("firstlogin").setExecutor(new FirstLoginCommand("firstlogin", "time.birth"));
     }
 
@@ -102,35 +104,8 @@ public class TimeManagement extends JavaPlugin implements TimeManagementAPI {
     }
 
     @Override
-    public long getTotalTime(UUID uuid) throws Exception {
-        DataWrapper data = loginHandler.getDataWrapper(uuid);
-        if (data == null)
-            throw new Exception("Data is unavailable");
-        return data.getRunningTotalTime(System.currentTimeMillis());
-    }
-
-    @Override
-    public long getTotalAFKTime(UUID uuid) throws Exception {
-        DataWrapper data = afkHandler.getDataWrapper(uuid);
-        if (data == null)
-            throw new Exception("Data is unavailable");
-        return data.getRunningTotalTime(System.currentTimeMillis());
-    }
-
-    @Override
-    public long getLoginCount(UUID uuid) throws Exception {
-        DataWrapper data = loginHandler.getDataWrapper(uuid);
-        if (data == null)
-            throw new Exception("Data is unavailable");
-        return data.getStartCount();
-    }
-
-    @Override
-    public long getFirstStart(UUID uuid) throws Exception {
-        DataWrapper data = loginHandler.getDataWrapper(uuid);
-        if (data == null)
-            throw new Exception("Data is unavailable");
-        return data.getFirstStart();
+    public CompletableFuture<PublicDataContainer> getBasicInfo(UUID uuid) {
+        return loginHandler.getBasicData(uuid);
     }
 
     @Override

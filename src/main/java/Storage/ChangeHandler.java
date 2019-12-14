@@ -354,4 +354,30 @@ public class ChangeHandler {
         });
     }
 
+    public CompletableFuture<PublicDataContainer> getBasicData(final UUID uuid) {
+        DataWrapper data = getDataWrapper(uuid);
+        if (data != null) {
+            long totalTime = data.getTotalTime();
+            if (data.isDoing())
+                totalTime = data.getRunningTotalTime(System.currentTimeMillis());
+            return CompletableFuture.completedFuture(new PublicDataContainer(data.getFirstStart(), totalTime, data.getStartCount()));
+        } else {
+            return CompletableFuture.supplyAsync(() -> {
+                try (Connection connection = MySQLConnectionPool.getConnection()) {
+                    String sql = "SELECT * FROM " + accumulatorTable.getName() + " WHERE UUID=?";
+                    PreparedStatement statement = connection.prepareStatement(sql);
+                    statement.setString(1, uuid.toString());
+                    ResultSet results = statement.executeQuery();
+                    if (results.next()) {
+                        return new PublicDataContainer(results.getLong(firstStartColumn.getName()), results.getLong(totalDoingColumn.getName()), results.getLong(startCountColumn.getName()));
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                return null;
+            });
+        }
+    }
+
+
 }

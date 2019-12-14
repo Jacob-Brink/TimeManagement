@@ -10,9 +10,3 @@ commands:
     permissions: []
     permission-message: You need time.total to use this.
     usage: "Usage: /totaltime"
-  test:
-    description: test the data inserts and requests
-    permission: time.test
-    permissions: []
-    permission-message: You need time.test to use this.
-    usage: "Usage: /test"

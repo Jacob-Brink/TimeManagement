@@ -1,4 +1,4 @@
-Commands/TestCommand.class
+Storage/PublicDataContainer.class
 Storage/DataWrapper.class
 Storage/ChangeHandler.class
 Storage/ChangeHandler$2.class

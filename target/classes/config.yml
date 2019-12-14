@@ -1,9 +1,9 @@
 #database
-host: "na-sql.pebblehost.com"
+host: "your_host.com"
 port: 3306
-database: "customer_82175"
-username: "customer_82175"
-password: "17aad5a450"
+database: "your_database"
+username: "your_account"
+password: "your_password"
 
 #debug mode, set TRUE if you want debug messages
-debugmode: true
+debugmode: false
